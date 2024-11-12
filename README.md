@@ -71,10 +71,10 @@ GaussianAnything generates <i>high-quality</i> and <i>editable</i> surfel Gaussi
 </table> -->
 
 <video width="100%" controls="" loop="" autoplay="" muted="">
-            <source src="https://nirvanalan.github.io/projects/GA/static/videos/gallary_video_final.mp4" type="video/mp4">
+            <!-- <source src="https://nirvanalan.github.io/projects/GA/static/videos/gallary_video_final.mp4" type="video/mp4"> -->
+            <source src="./assets/gallary_video_final-github.mp4" type="video/mp4">
             Your browser does not support the video tag.
 </video>
-
 
 
 <!-- <br> -->
