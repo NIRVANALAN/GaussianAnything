@@ -71,7 +71,7 @@ GaussianAnything generates <i>high-quality</i> and <i>editable</i> surfel Gaussi
 </table> -->
 
 
-https://github.com/user-attachments/assets/b7675df4-6653-4170-8317-943a14163ec4
+Uploading GaussianAnything.mp4…
 
 
 
