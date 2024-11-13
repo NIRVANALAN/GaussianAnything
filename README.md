@@ -91,10 +91,10 @@ This repository contains the official implementation of GaussianAnything: Intera
 
 <h4 align="center">
   <a href="https://nirvanalan.github.io/projects/GA/" target='_blank'>[Project Page]</a>
+  •
+  <a href="https://arxiv.org/abs/2411.08033" target='_blank'>[arXiv]</a>
   <!-- •
-  <a href="https://arxiv.org/pdf/TODO" target='_blank'>[arXiv]</a>  -->
-  <!-- •
-  <a href="https://huggingface.co/spaces/yslan/LN3Diff_I23D" target='_blank'>[Gradio Demo]</a>  -->
+  <a href="https://huggingface.co/spaces/yslan/LN3Diff_I23D" target='_blank'>[Gradio Demo]</a> 
 </h4>
 
 
