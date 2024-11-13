@@ -146,8 +146,9 @@ If you find our work useful for your research, please consider citing the paper:
 @article{lan2024ga,
     title={GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation}, 
     author={Yushi Lan and Shangchen Zhou and Zhaoyang Lyu and Fangzhou Hong and Shuai Yang and Bo Dai and Xingang Pan and Chen Change Loy},
-    year={2024},
-    booktitle={arXiv preprint arxiv},
+    eprint={2411.08033},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
 }
 ```
 
