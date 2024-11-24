@@ -1,0 +1,29 @@
+ldm_configs:
+
+  conditioner_config:
+    target: sgm.modules.GeneralConditioner
+    params:
+      emb_models:
+        - is_trainable: False
+          input_key: caption
+          ucg_rate: 0.1
+          target: sgm.modules.encoders.modules.FrozenOpenCLIPEmbedder2
+          params:
+            always_return_pooled: True
+            legacy: False
+            arch: 'ViT-L-14'
+            version: 'openai'
+
+
+  loss_fn_config:
+    target: sgm.modules.diffusionmodules.loss.FMLoss
+    params:
+      transport_config:
+        target: transport.create_transport
+        params: # all follow default
+          snr_type: lognorm
+
+  guider_config:
+    target: sgm.modules.diffusionmodules.guiders.VanillaCFG
+    params:
+      scale: 4.0

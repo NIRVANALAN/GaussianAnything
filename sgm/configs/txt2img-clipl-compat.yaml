@@ -1,0 +1,60 @@
+ldm_configs:
+
+  scheduler_config:
+    target: sgm.lr_scheduler.LambdaLinearScheduler
+    params:
+      warm_up_steps: [10000]
+      cycle_lengths: [10000000000000]
+      f_start: [1.e-6]
+      f_max: [1.]
+      f_min: [1.]
+
+  denoiser_config:
+    target: sgm.modules.diffusionmodules.denoiser.DiscreteDenoiser
+    params:
+      num_idx: 1000
+
+      scaling_config:
+        target: sgm.modules.diffusionmodules.denoiser_scaling.EpsScaling
+      discretization_config:
+        target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
+
+  conditioner_config:
+    target: sgm.modules.GeneralConditioner
+    params:
+      emb_models:
+        - is_trainable: False
+          input_key: caption
+          ucg_rate: 0.1
+          legacy_ucg_value: ""
+          target: sgm.modules.encoders.modules.FrozenCLIPEmbedder
+          params:
+            always_return_pooled: True
+
+  loss_fn_config:
+    target: sgm.modules.diffusionmodules.loss.StandardDiffusionLoss
+    params:
+      loss_weighting_config:
+        target: sgm.modules.diffusionmodules.loss_weighting.EpsWeighting
+      sigma_sampler_config:
+        target: sgm.modules.diffusionmodules.sigma_sampling.DiscreteSampling
+        params:
+          num_idx: 1000
+
+          discretization_config:
+            target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
+
+  sampler_config:
+    target: sgm.modules.diffusionmodules.sampling.EulerEDMSampler
+    params:
+      # num_steps: 250
+      num_steps: 50
+
+      discretization_config:
+        target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
+
+      guider_config:
+        target: sgm.modules.diffusionmodules.guiders.VanillaCFG
+        params:
+          # scale: 1.0
+          scale: 6.5

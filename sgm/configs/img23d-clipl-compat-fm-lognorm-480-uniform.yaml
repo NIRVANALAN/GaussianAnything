@@ -1,0 +1,66 @@
+ldm_configs:
+
+  # scheduler_config:
+  #   target: sgm.lr_scheduler.LambdaLinearScheduler
+  #   params:
+  #     warm_up_steps: [10000]
+  #     cycle_lengths: [10000000000000]
+  #     f_start: [1.e-6]
+  #     f_max: [1.]
+  #     f_min: [1.]
+
+  # denoiser_config:
+  #   target: sgm.modules.diffusionmodules.denoiser.DiscreteDenoiser
+  #   params:
+  #     num_idx: 1000
+
+  #     scaling_config:
+  #       target: sgm.modules.diffusionmodules.denoiser_scaling.EpsScaling
+  #     discretization_config:
+  #       target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
+
+  conditioner_config:
+    target: sgm.modules.GeneralConditioner
+    params:
+      emb_models:
+        - is_trainable: False
+          input_key: 'img'
+          ucg_rate: 0.316
+          # legacy_ucg_value: None
+          target: sgm.modules.encoders.modules.FrozenOpenCLIPImageEmbedder
+          params:
+              arch: 'ViT-L-14'
+              version: 'openai'
+              # version: 'laion2b_s32b_b82k'
+              freeze: True
+              output_tokens: True
+              # inp_size: 448
+              inp_size: 224
+
+        - is_trainable: False
+          input_key: 'img'
+          ucg_rate: 0.316
+          # legacy_ucg_value: None
+          target: sgm.modules.encoders.modules.FrozenDinov2ImageEmbedder
+          params:
+              freeze: True
+              arch: vitl
+              # inp_size: 448
+              inp_size: 224
+
+  loss_fn_config:
+    target: sgm.modules.diffusionmodules.loss.FMLoss
+    params:
+      transport_config:
+        target: transport.create_transport
+        params: # all follow default
+          # snr_type: lognorm # too noisy?
+          snr_type: uniform
+          # path_type: Linear
+          path_type: GVP
+
+  guider_config:
+    target: sgm.modules.diffusionmodules.guiders.VanillaCFG
+    params:
+      # scale: 1.0
+      scale: 5.0

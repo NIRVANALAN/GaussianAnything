@@ -79,9 +79,9 @@ https://github.com/user-attachments/assets/988ea293-b3ed-41d4-87e9-a20c89bfef98
 
 For more visual results, go checkout our <a href="https://nirvanalan.github.io/projects/GA/" target="_blank">project page</a> :page_with_curl:
 
-<!-- <strike> -->
+<strike>
 Codes coming soon :facepunch:
-<!-- </strike> -->
+</strike>
 
 This repository contains the official implementation of GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation
 
@@ -118,7 +118,8 @@ This repository contains the official implementation of GaussianAnything: Intera
 
 ## :mega: Updates
 
-[11/2024] Initial release.
+[24/Nov/2024] Inference code and checkpoint release.
+[13/Nov/2024] Initial release.
 
 
 <!-- ### Demo
@@ -133,11 +134,112 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 
 ### :dromedary_camel: TODO
 
-- [ ] Release inference code and checkpoints.
-- [ ] Release Training code.
+- [x] Release inference code and checkpoints.
+- [x] Release Training code.
+- [x] Release pre-extracted latent codes for 3D diffusion training.
 - [ ] Release Gradio Demo.
+- [ ] Release the evaluation code.
+- [ ] Lint the code.
 
 
+# Inference
+
+* All diffusion checkpoints will be automatically loaded from huggingface.
+* The results will be directly dumped to ```./logs```, and can be modified by changing ```$logdir``` in the bash file accordingly.
+
+<!-- To load the checkpoint automatically: please replace ```/mnt/sfs-common/yslan/open-source``` with ```yslan/GaussianAnything/ckpts/checkpoints```. -->
+
+
+
+## Text-2-3D:
+
+Please update the caption for 3D generation in ```datasets/caption-forpaper.txt```. T o change the number of samples to be generated, please change ```$num_samples``` in the bash file.
+
+**stage-1** (point cloud generation):
+```
+bash shell_scripts/release/inference/t23d/stage1-t23d.sh
+```
+then, set the ```$stage_1_output_dir``` to the ```$logdir``` of the above stage.
+
+**stage-2** (2D Gaussians generation): 
+```
+bash shell_scripts/release/inference/t23d/stage2-t23d.sh
+```
+
+The results will be dumped to ```./logs/t23d/stage-2```
+
+## I23D (requires two stage generation):
+
+set the $data_dir accordingly. For some demo image, please download from [huggingfac.co/yslan/GaussianAnything/demo-img](https://huggingface.co/yslan/GaussianAnything/tree/main/demo-img).
+
+**stage-1** (point cloud generation):
+```
+bash shell_scripts/release/inference/i23d/i23d-stage1.sh
+```
+
+then, set the $stage_1_output_dir to the $logdir of the above stage.
+
+**stage-2** (2D Gaussians generation): 
+```
+bash shell_scripts/release/inference/i23d/i23d-stage1.sh
+```
+
+## 3D VAE Reconstruction:
+
+To encode a 3D asset into the latent point cloud, please download the pre-trained VAE checkpoint from [huggingfac.co/yslan/gaussiananything/ckpts/vae/model_rec1965000.pt](https://huggingface.co/yslan/GaussianAnything/blob/main/ckpts/vae/model_rec1965000.pt) to ```./checkpoint/model_rec1965000.pt```.
+
+Then, run the inference script
+
+```bash 
+bash shell_scripts/release/inference/vae-3d.sh
+```
+
+This will encode the mulit-view 3D renderings in ```./assets/demo-image-for-i23d/for-vae-reconstruction/Animals/0``` into the point-cloud structured latent code, and export them (along with the 2dgs mesh) in ```./logs/latent_dir/```. The exported latent code will be used for efficient 3D diffusion training. 
+
+Note that if you want to use the pre-extracted 3D latent codes, please check the following instructions.
+
+
+
+# Training (Flow Matching 3D Generation)
+All the training is conducted on 8 A100 (80GiB) with BF16 enabled. For training on V100, please use FP32 training by setting ```--use_amp``` False in the bash file. Feel free to tune the ```$batch_size``` in the bash file accordingly to match your VRAM.
+To enable optimized RMSNorm, feel free to install [Apex](https://github.com/NVIDIA/apex?tab=readme-ov-file#linux).
+
+
+To facilitate reproducing the performance, we have uploaded the pre-extracted poind cloud-structured latent codes to the [huggingfac.co/yslan/gaussiananything/dataset/latent.tar.gz](https://huggingface.co/yslan/GaussianAnything/blob/main/dataset/latent.tar.gz) (34GiB required). Please download the pre extracted point cloud latent codes, unzip and set the ```$mv_latent_dir``` in the bash file accordingly.
+
+
+## Text to 3D:
+Please donwload the 3D caption from hugging face [huggingfac.co/yslan/GaussianAnything/dataset/text_captions_3dtopia.json](https://huggingface.co/yslan/GaussianAnything/blob/main/dataset/text_captions_3dtopia.json), and put it under ```dataset```.
+
+
+Note that if you want to train a specific class of Objaverse, just manually change the code at ```datasets/g_buffer_objaverse.py:3043```.
+
+**stage-1 training (point cloud generation)**:
+
+```
+bash shell_scripts/release/train/stage2-t23d/t23d-pcd-gen.sh
+```
+
+**stage-2 training (point cloud-conditioned KL feature generation)**:
+
+```
+bash shell_scripts/release/train/stage2-t23d/t23d-klfeat-gen.sh
+```
+
+## (single-view) Image to 3D
+Please download g-buffer dataset first.
+
+**stage-1 training (point cloud generation)**:
+
+```
+bash shell_scripts/release/train/stage2-i23d/i23d-pcd-gen.sh
+```
+
+**stage-2 training (point cloud-conditioned KL feature generation)**:
+
+```
+bash shell_scripts/release/train/stage2-i23d/i23d-klfeat-gen.sh
+```
 
 
 ## :handshake: BibTex
@@ -156,6 +258,12 @@ If you find our work useful for your research, please consider citing the paper:
 ## :newspaper_roll:  License
 
 Distributed under the NTU S-Lab License. See `LICENSE` for more information.
+
+## :heart:  Acknowledgement
+
+Our flow-mathcing training code is built on [SiT](https://github.com/willisma/SiT), and the rendering code is from [2DGS](https://github.com/hbb1/2d-gaussian-splatting). The training dataset (Objaverse-V1) rendering is provided by [G-Buffer Objaverse](https://aigc3d.github.io/gobjaverse/). Also, we thank all the [3D artists](https://poly.pizza/u/jeremy) who have shared their created 3D assets under CC license for the academic use.
+
+Also, this work is built on our previous work on the native 3D diffusion generative model, [LN3Diff, ECCV 2024](https://github.com/NIRVANALAN/LN3Diff?tab=readme-ov-file). Please feel free to have a check.
 
 
 ## Contact
