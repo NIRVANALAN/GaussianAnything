@@ -110,7 +110,7 @@ logdir=./logs/t23d/stage-1
 SR_TRAIN_FLAGS_v1_2XC="
 --decoder_in_chans 32 \
 --out_chans 96 \
---ae_classname vit.vit_triplane.pcd_structured_latent_space_lion_learnoffset_surfel_novaePT_sr_cascade_x8x4x4 \
+--ae_classname vit.vit_triplane.pcd_structured_latent_space_vae_decoder_cascaded \
 --logdir $logdir \
 --arch_encoder vits \
 --arch_decoder vitb \

@@ -131,7 +131,6 @@ Check out our online demo on [Gradio space](https://huggingface.co/spaces/yslan/
 bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 ``` -->
 
-
 ### :dromedary_camel: TODO
 
 - [x] Release inference code and checkpoints.
@@ -141,6 +140,21 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 - [ ] Release the evaluation code.
 - [ ] Lint the code.
 
+<!-- 
+- [Overview](#overview)
+  * [Abstract](#abstract)
+  * [Examples](#examples)
+  * [Method](#method)
+- [Running the code](#running-the-code)
+  * [Dependencies](#dependencies)
+  * [Data](#data)
+  * [Training](#training)
+  * [Sampling](#sampling)
+  * [Pretrained checkpoints](#pretrained-checkpoints)
+  * [Common issues](#common-issues)
+- [Acknowledgement](#acknowledgement)
+- [Citation](#bibtex)
+- [Contact](#contact) -->
 
 # Inference
 
@@ -242,7 +256,7 @@ bash shell_scripts/release/train/stage2-i23d/i23d-klfeat-gen.sh
 ```
 
 
-## :handshake: BibTex
+## BibTex
 If you find our work useful for your research, please consider citing the paper:
 ```
 @article{lan2024ga,
