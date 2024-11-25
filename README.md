@@ -119,6 +119,7 @@ This repository contains the official implementation of GaussianAnything: Intera
 ## :mega: Updates
 
 [24/Nov/2024] Inference code and checkpoint release.
+
 [13/Nov/2024] Initial release.
 
 
