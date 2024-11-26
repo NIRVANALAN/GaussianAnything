@@ -1,3 +1,4 @@
+torch
 xformers==0.0.26.post1+cu118
 torchvision
 absl-py
@@ -33,10 +34,14 @@ trimesh
 huggingface_hub
 safetensors
 PyMCubes
-vision aided loss
+vision-aided-loss
 transformers
-torchdiffeg==8.2.4torchmetrics==1.4.3torchtyping==0.1.5imath
+torchdiffeg==8.2.4
+torchmetrics==1.4.3
+torchtyping==0.1.5
+imath
 OpenEXR
 onnxscript
 tritonclient
+gradio==4.43.0
 third_party/diff-surfel-rasterization
