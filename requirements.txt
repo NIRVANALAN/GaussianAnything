@@ -36,12 +36,12 @@ safetensors
 PyMCubes
 vision-aided-loss
 transformers
-torchdiffeg==8.2.4
-torchmetrics==1.4.3
-torchtyping==0.1.5
+torchdiffeq
+torchmetrics
 imath
 OpenEXR
 onnxscript
 tritonclient
 gradio==4.43.0
-third_party/diff-surfel-rasterization
+git+https://github.com/hbb1/diff-surfel-rasterization.git
+git+https://gitlab.inria.fr/bkerbl/simple-knn.git
