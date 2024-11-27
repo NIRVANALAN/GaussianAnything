@@ -55,7 +55,7 @@ from nsr.camera_utils import generate_input_camera, uni_mesh_path, sample_unifor
 
 # from torch.utils.tensorboard import SummaryWriter
 
-SEED = 0
+# SEED = 0
 
 
 
@@ -71,8 +71,8 @@ def training_loop(args):
         args.local_rank)  # set this line to avoid extra memory on rank 0
     th.cuda.empty_cache()
 
-    th.cuda.manual_seed_all(SEED)
-    np.random.seed(SEED)
+    th.cuda.manual_seed_all(args.seed)
+    np.random.seed(args.seed)
 
     dist_util.setup_dist(args)
 
@@ -263,10 +263,12 @@ def training_loop(args):
         training_loop_class.eval_i23d_and_export(
             prompt='',
             save_img=args.save_img,
-            use_train_trajectory=args.use_train_trajectory,
+            # use_train_trajectory=args.use_train_trajectory,
             camera=camera,
-            num_instances=args.num_instances,
+            # num_instances=args.num_instances,
             num_samples=args.num_samples,
+            unconditional_guidance_scale=args.unconditional_guidance_scale,
+            seed=args.seed,
             stage_1_output_dir=args.stage_1_output_dir,
             export_mesh=args.export_mesh,
         )
@@ -282,10 +284,12 @@ def training_loop(args):
             training_loop_class.eval_and_export(
                 prompt=prompt,
                 save_img=args.save_img,
-                use_train_trajectory=args.use_train_trajectory,
+                # use_train_trajectory=args.use_train_trajectory,
                 camera=camera,
-                num_instances=args.num_instances,
+                unconditional_guidance_scale=args.unconditional_guidance_scale,
+                # num_instances=args.num_instances,
                 num_samples=args.num_samples,
+                seed=args.seed,
                 stage_1_output_dir=args.stage_1_output_dir,
                 export_mesh=args.export_mesh,
             )
@@ -346,6 +350,7 @@ def create_argparser(**kwargs):
         use_train_trajectory=
         False,  # use train trajectory to sample images for fid calculation
         unconditional_guidance_scale=1.0,
+        seed=42,
         num_samples=10,
         num_instances=10, # for i23d, loop different condition
     )

@@ -39,37 +39,6 @@ GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation
 GaussianAnything generates <i>high-quality</i> and <i>editable</i> surfel Gaussians through a cascaded native 3D diffusion pipeline, given single-view images or texts as the conditions.
 </strong>
 
-<!-- <table>
-<tr></tr>
-<tr>
-    <td>
-        <img src="assets/t23d/dit-l2/the-eiffel-tower.gif">
-    </td>
-    <td>
-        <img src="assets/t23d/dit-l2/stone-waterfall-with-wooden-shed.gif">
-    </td>
-    <td>
-        <img src="assets/t23d/dit-l2/a-plate-of-sushi.gif">
-    </td>
-    <td>
-        <img src="assets/t23d/dit-l2/wooden-chest-with-golden-trim.gif">
-    </td>
-    <td>
-        <img src="assets/t23d/dit-l2/a-blue-plastic-chair.gif">
-    </td>
-</tr>
-
-
-<tr>
-    <td align='center' width='20%'>The eiffel tower.</td>
-    <td align='center' width='20%'>A stone waterfall with wooden shed.</td>
-    <td align='center' width='20%'>A plate of sushi</td>
-    <td align='center' width='20%'>A wooden chest with golden trim</td>
-    <td align='center' width='20%'>A blue plastic chair.</td>
-</tr>
-<tr></tr>
-</table> -->
-
 
 https://github.com/user-attachments/assets/988ea293-b3ed-41d4-87e9-a20c89bfef98
 
@@ -118,6 +87,10 @@ This repository contains the official implementation of GaussianAnything: Intera
 
 ## :mega: Updates
 
+[27/Nov/2024] Release gradio demo (local version), which supports image-to-3D generation. Simply call ```python scripts/gradio_app_cascaded.py```.
+
+[27/Nov/2024] Support colored point cloud (2D Gaussians centers) and TSDF mesh export. Enabled by default```--export_mesh True```.
+
 [24/Nov/2024] Inference code and checkpoint release.
 
 [13/Nov/2024] Initial release.
@@ -137,7 +110,8 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 - [x] Release inference code and checkpoints.
 - [x] Release Training code.
 - [x] Release pre-extracted latent codes for 3D diffusion training.
-- [ ] Release Gradio Demo.
+- [x] Release Gradio Demo (locally).
+- [ ] Release Gradio Demo (Huggingface ZeroGPU).
 - [ ] Release the evaluation code.
 - [ ] Lint the code.
 
@@ -157,16 +131,71 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 - [Citation](#bibtex)
 - [Contact](#contact) -->
 
+
+
 # Inference
 
-* All diffusion checkpoints will be automatically loaded from huggingface.
+## setup the environment (the same env as [LN3Diff, ECCV 2024](https://github.com/NIRVANALAN/LN3Diff?tab=readme-ov-file))
+
+```bash
+conda create -n ga python=3.10
+conda activate ga
+pip intall -r requrements.txt # will install the surfel Gaussians environments and pytorch3d automatically.
+```
+
+## Gradio demo (Image-to-3D)
+
+For image-to-3D generation with GaussianAnything, we have provided a gradio interface. After setting up the environment, please run ```python scripts/gradio_app_cascaded.py``` to launch the gradio locally. The code has been tested on V100 32GiB GPU.
+
+<img title="a title" alt="Gaussians XYZ Visualization" src="./assets/i23d-output/gradio-ga.png">
+
+<!-- Then, install pytorch3d with 
+```bash
+pip install git+https://github.com/facebookresearch/pytorch3d.git@stable
+``` -->
+
+## Checkpoints
+
+* All diffusion checkpoints will be automatically loaded from [huggingface.co/yslan/GaussianAnything](https://huggingface.co/yslan/GaussianAnything/tree/main).
 * The results will be directly dumped to ```./logs```, and can be modified by changing ```$logdir``` in the bash file accordingly.
 
 <!-- To load the checkpoint automatically: please replace ```/mnt/sfs-common/yslan/open-source``` with ```yslan/GaussianAnything/ckpts/checkpoints```. -->
 
+To set the CFG score and random seed, please update ```$unconditional_guidance_scale$``` and ```$seed$``` in the bash file.
 
 
-## Text-2-3D:
+## I23D (requires two stage generation):
+
+set the ```$data_dir``` accordingly. For some demo image, please download from [huggingfac.co/yslan/GaussianAnything/demo-img](https://huggingface.co/yslan/GaussianAnything/tree/main/demo-img). We have also included the demo images shown in the paper in ```./assets/demo-image-for-i23d/instantmesh``` and ```./assets/demo-image-for-i23d/gso```. 
+
+In the bash file, we set ```data_dir="./assets/demo-image-for-i23d/instantmesh"``` by default.
+
+**stage-1** (point cloud generation):
+```
+bash shell_scripts/release/inference/i23d/i23d-stage1.sh
+```
+
+The sparse point cloud wll be saved to, e.g., ```logs/i23d/stage-1/dino_img/house2-input/sample-0-0.ply```. Note that ```$num_samples$``` samples will be saved, which is set in the bash file.
+
+Then, set the ```$stage_1_output_dir``` to the ```$logdir``` of the above stage.
+
+**stage-2** (2D Gaussians generation): 
+```
+bash shell_scripts/release/inference/i23d/i23d-stage2.sh
+```
+
+In the output dir of each instance, e.g., ```./logs/i23d/stage-2/dino_img/house2-input```, the code dumped the colored point cloud extracted from the surfel Gaussians center (xyz+RGB) ```sample-0-0-gaussian-pcd.ply```:
+
+<img title="a title" alt="Gaussians XYZ Visualization" src="./assets/i23d-output/house-xyz.png">
+
+The TSDF mesh ```stage1ID_0-stage2ID-0-mesh.obj```:
+
+<img title="a title" alt="Surfel Gaussians TSDF" src="./assets/i23d-output/house-tsdf.png">
+
+Both can be visualized by meshlab.
+
+
+## Text-2-3D (requires two stage generation):
 
 Please update the caption for 3D generation in ```datasets/caption-forpaper.txt```. T o change the number of samples to be generated, please change ```$num_samples``` in the bash file.
 
@@ -182,22 +211,6 @@ bash shell_scripts/release/inference/t23d/stage2-t23d.sh
 ```
 
 The results will be dumped to ```./logs/t23d/stage-2```
-
-## I23D (requires two stage generation):
-
-set the $data_dir accordingly. For some demo image, please download from [huggingfac.co/yslan/GaussianAnything/demo-img](https://huggingface.co/yslan/GaussianAnything/tree/main/demo-img).
-
-**stage-1** (point cloud generation):
-```
-bash shell_scripts/release/inference/i23d/i23d-stage1.sh
-```
-
-then, set the $stage_1_output_dir to the $logdir of the above stage.
-
-**stage-2** (2D Gaussians generation): 
-```
-bash shell_scripts/release/inference/i23d/i23d-stage1.sh
-```
 
 ## 3D VAE Reconstruction:
 

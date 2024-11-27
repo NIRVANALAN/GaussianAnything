@@ -17,7 +17,9 @@ num_frames=8
 num_workers=2 # ! for debug
 NUM_GPUS=1
 batch_size=1
-num_samples=2
+num_samples=1
+unconditional_guidance_scale=4.5
+seed=59
 
 microbatch=$(( n_cond_frames*batch_size*2 ))
 
@@ -109,7 +111,7 @@ DIFFUSION_FLAGS="--diffusion_steps 1000 --noise_schedule linear \
 --use_eos_feature False \
 --roll_out True \
 "
-logdir=./logs/i23d/stage-2/dino_img-debug/
+logdir=./logs/i23d/stage-2/dino_img/
 
 SR_TRAIN_FLAGS_v1_2XC="
 --decoder_in_chans 32 \
@@ -209,9 +211,11 @@ torchrun --nproc_per_node=$NUM_GPUS \
  --load_real True \
  --load_gso True \
  --save_img False \
- --export_mesh False \
+ --export_mesh True \
  --pcd_path /cpfs01/user/lanyushi.p/data/FPS_PCD/pcd-V=10_4096_polish_fullset/fps-pcd/ \
  --stage_1_output_dir ./logs/i23d/stage-1/dino_img/ \
+ --unconditional_guidance_scale ${unconditional_guidance_scale} \
+ --seed ${seed} \
  --mv_latent_dir "" \
 
 # pcd_structured_latent_space_lion_learnoffset_surfel_novaePT_sr_cascade_x8x4x4_512

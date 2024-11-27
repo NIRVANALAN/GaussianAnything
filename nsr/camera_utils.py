@@ -229,13 +229,15 @@ def generate_input_camera(r, poses, device='cpu', fov=30):
 
     return cam2world, fxfycxcy
 
+
 def uni_mesh_path(frame_number=16, radius=1.8):
     azimuths = []
     elevations = []
 
     # for elevation in [0,-30,30]:
     # for elevation in [0,-30,30, -65, 65]:
-    for elevation in [0,-30,30, -60, 60]:
+    # for elevation in [0,-30,30, -60, 60]:
+    for elevation in [60,30, 0, -30, -60]:
 
         for i in range(frame_number): # 1030 * 5 * 10, for FID 50K
 

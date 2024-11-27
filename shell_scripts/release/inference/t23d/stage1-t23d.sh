@@ -25,6 +25,9 @@ DATASET_FLAGS="
  --eval_data_dir ${data_dir} \
 "
 
+unconditional_guidance_scale=4.5
+seed=59
+
 lr=0
 
 kl_lambda=0
@@ -203,4 +206,6 @@ torchrun --nproc_per_node=$NUM_GPUS \
  --pooling_ctx_dim 768 \
  --num_samples ${num_samples} \
  --pcd_path "" \
+ --unconditional_guidance_scale ${unconditional_guidance_scale} \
+ --seed ${seed} \
  --mv_latent_dir "" \

@@ -4741,7 +4741,7 @@ class RealDataset_GSO(Dataset):
             # all_fname = [name for name in all_fname if '-input' in name ]
 
             # all_fname = ['house2-input.png', 'plant-input.png']
-            all_fname = ['house2-input.png']
+            # all_fname = ['house2-input.png']
 
             self.rgb_list = [os.path.join(self.file_path, name) for name in all_fname]
 

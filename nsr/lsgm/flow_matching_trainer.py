@@ -23,6 +23,7 @@ import numpy as np
 import torch as th
 import torch.distributed as dist
 import torchvision
+from nsr.camera_utils import generate_input_camera, uni_mesh_path
 from PIL import Image
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import AdamW
@@ -61,6 +62,17 @@ from .train_util_diffusion_lsgm_noD_joint import TrainLoop3DDiffusionLSGMJointno
 # ! add new schedulers from https://github.com/Stability-AI/generative-models
 
 from .crossattn_cldm import TrainLoop3DDiffusionLSGM_crossattn
+
+# Function to generate a rotation matrix for an arbitrary theta along the x-axis
+def rotation_matrix_x(theta_degrees):
+    theta = np.radians(theta_degrees)  # Convert degrees to radians
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+    
+    rotation_matrix = np.array([[1, 0, 0],
+                                [0, cos_theta, -sin_theta],
+                                [0, sin_theta, cos_theta]])
+    return rotation_matrix
 
 # import SD stuffs
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -668,6 +680,7 @@ class FlowMatchingEngine(TrainLoop3DDiffusionLSGM_crossattn):
         # self.sampler
         sample_fn = self.transport_sampler.sample_ode(num_steps=250, cfg=True) # default ode sampling setting.
 
+        logger.log(f'cfg_scale: {cfg_scale}, seed: {seed}')
 
         th.manual_seed(seed) # to reproduce result
         zs = th.randn(batch_size, *shape).to(dist_util.dev()).to(self.dtype)
@@ -1233,7 +1246,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
         # name = f'{idx}-{i}-fuse.ply'
         # name = f'mesh.obj'
-        name = f'{idx}/mesh_raw.obj'
+        name = f'{idx}/{i}-mesh_raw.obj'
         # st()
         # depth_trunc = (radius * 2.0) if depth_trunc < 0  else depth_trunc
         # voxel_size = (depth_trunc / mesh_res) if voxel_size < 0 else voxel_size
@@ -1245,10 +1258,18 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         logger.log("mesh saved at {}".format(os.path.join(train_dir, name)))
         # post-process the mesh and save, saving the largest N clusters
         # mesh_post = post_process_mesh(mesh, cluster_to_keep=num_cluster)
+
         mesh_post = post_process_mesh(mesh)
-        # o3d.io.write_triangle_mesh(os.path.join(train_dir, name.replace('.obj', '_post.obj')), mesh_post)
-        o3d.io.write_triangle_mesh(os.path.join(train_dir, name.replace('_raw.obj', '.obj')), mesh_post)
-        logger.log("mesh post processed saved at {}".format(os.path.join(train_dir, name.replace('.obj', '_post.obj'))))
+        mesh_vertices = np.asarray(mesh_post.vertices)  # Convert vertices to a numpy array
+        rotated_vertices = mesh_vertices @ rotation_matrix_x(-90).T
+        mesh_post.vertices = o3d.utility.Vector3dVector(rotated_vertices)  # Update vertices
+        post_mesh_path = os.path.join(train_dir, name.replace('_raw.obj', '.obj'))
+
+        o3d.io.write_triangle_mesh(post_mesh_path, mesh_post)
+
+        logger.log("mesh post processed saved at {}".format(post_mesh_path))
+
+        return post_mesh_path
 
 
     @torch.no_grad()
@@ -1264,12 +1285,19 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         return o3d.mesh
         """
 
-        if self.aabb is not None: # as in lara.
-            center = self.aabb.mean(0)
-            radius = np.linalg.norm(self.aabb[1] - self.aabb[0]) * 0.5
-            voxel_size = radius / 256
-            sdf_trunc = voxel_size * 2
-            print("using aabb")
+        # if self.aabb is not None: # as in lara.
+        #     center = self.aabb.mean(0)
+        #     radius = np.linalg.norm(self.aabb[1] - self.aabb[0]) * 0.5
+        #     voxel_size = radius / 256
+        #     sdf_trunc = voxel_size * 2
+        #     print("using aabb")
+
+        assert self.aabb is not None # as in lara.
+        center = self.aabb.mean(0)
+        radius = np.linalg.norm(self.aabb[1] - self.aabb[0]) * 0.5
+        voxel_size = radius / 160 # less holes
+        sdf_trunc = voxel_size * 12
+        print("using aabb")
 
         volume = o3d.pipelines.integration.ScalableTSDFVolume(
             voxel_length= voxel_size,
@@ -1335,6 +1363,9 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                                     output_dir=None, 
                                     for_fid=False,):
 
+        if output_dir is None:
+            output_dir = logger.get_dir()
+
         batch_size, L, C = planes.shape
 
         # ddpm_latent = { self.latent_name: planes[..., :-3] * self.feat_scale_factor.to(planes),  # kl-reg latent
@@ -1374,8 +1405,18 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
         # pcu.save_mesh_v(f'{output_dir}/gaussian.ply', ddpm_latent['gaussians_upsampled'][0, ..., :3].cpu().numpy())
         # fps-downsampling?
-        pred_gaussians_xyz = ddpm_latent['gaussians_upsampled_3'][..., :3]
+        # pred_gaussians_xyz = ddpm_latent['gaussians_upsampled_3'][..., :3]
         fine_gs = ddpm_latent[fine_scale]
+    
+        fine_gs_numpy = fine_gs.cpu().numpy()
+        vtx = np.transpose(rotation_matrix_x(-90) @ np.transpose(fine_gs_numpy[0, :, :3])) # for gradio visualization
+        cloud = trimesh.PointCloud(vtx, colors=fine_gs_numpy[0, :, 10:13])
+        # Save the point cloud to an OBJ file
+        rgb_xyz_path_forgradio = f'{output_dir}/{name_prefix}-gaussian-pcd.glb' # gradio only accepts glb for visualization
+        _ = cloud.export(rgb_xyz_path_forgradio)
+
+        rgb_xyz_path_formeshlab = f'{output_dir}/{name_prefix}-gaussian-pcd.ply' # for meshlab visualization
+        _ = cloud.export(rgb_xyz_path_formeshlab)
 
         # K=4096
         # query_pcd_xyz, fps_idx = pytorch3d.ops.sample_farthest_points(
@@ -1383,12 +1424,11 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         #     # random_start_point=False)  # B self.latent_num
         #     random_start_point=True)  # B self.latent_num
 
-        if output_dir is None:
-            output_dir = logger.get_dir()
 
         # pcu.save_mesh_v(f'{output_dir}/{name_prefix}-gaussian-{K}.ply', query_pcd_xyz[0].cpu().numpy())
 
-        np.save(f'{output_dir}/{name_prefix}-gaussian.npy', fine_gs.cpu().numpy())
+        np.save(f'{output_dir}/{name_prefix}-gaussian.npy', fine_gs_numpy)
+        video_path = f'{output_dir}/{name_prefix}-gs.mp4'
 
         # return None, None
 
@@ -1400,7 +1440,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
             #     codec='libx264')
 
             video_out = imageio.get_writer(
-                f'{output_dir}/{name_prefix}-gs.mp4',
+                video_path,
                 mode='I',
                 fps=15,
                 codec='libx264')
@@ -1438,7 +1478,9 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         render_reference = th.cat([zero123pp_pose.reshape(frame_number,-1), K.unsqueeze(0).repeat(frame_number,1)], dim=-1).cpu().numpy()
         '''
 
-        render_reference = th.load('eval_pose.pt', map_location='cpu').numpy()[:24]
+        assert render_reference is not None
+
+        # render_reference = th.load('eval_pose.pt', map_location='cpu').numpy()[:24]
         # rand_start_idx = random.randint(0,2)
         # render_reference = render_reference[rand_start_idx::3] # randomly render 8 views, maintain fixed azimuths
         # assert len(render_reference)==8
@@ -1502,7 +1544,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
             all_alphas.append(einops.rearrange(pred[fine_scale_key]['alpha'], 'B V ... -> (B V) ...'))
 
             all_pred_vis = {}
-            for key in pred.keys():
+            # for key in pred.keys():
+            for key in ['gaussians_base', fine_scale_key]: # only show two LoDs
                 pred_scale = pred[key] # only show finest result here
                 for k in pred_scale.keys():
                     pred_scale[k] = einops.rearrange(pred_scale[k], 'B V ... -> (B V) ...') # merge 
@@ -1538,7 +1581,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
             f'{output_dir}/{name_prefix}.mp4')
 
         del video_out, pred, pred_vis, vis
-        return all_rgbs, all_depths, all_alphas
+        # return all_rgbs, all_depths, all_alphas
+        return all_rgbs, all_depths, all_alphas, video_path, rgb_xyz_path_forgradio
 
     @th.no_grad()
     def _make_vis_img(self, pred):
@@ -1571,7 +1615,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         requires_grad(self.ddpm_model, True) # 
 
     @th.inference_mode()
-    def sample_and_save(self, batch_c, ucg_keys, num_samples, camera, save_img, idx=0, save_dir='', export_mesh=False, stage1_idx=0):
+    def sample_and_save(self, batch_c, ucg_keys, num_samples, camera, save_img, idx=0, save_dir='', export_mesh=False, stage1_idx=0, cfg_scale=4.0, seed=42):
 
         with th.cuda.amp.autocast(dtype=self.dtype,
                                     enabled=self.mp_trainer.use_amp):
@@ -1582,7 +1626,10 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                 if len(self.conditioner.embedders) > 0 else [],
             )
 
-        sampling_kwargs = {}
+        sampling_kwargs = {
+            'cfg_scale': cfg_scale, # default value in SiT
+            'seed': seed,
+        }
 
         N = num_samples  # hard coded, to update
         z_shape = (N, 768, self.ddpm_model.in_channels)
@@ -1629,28 +1676,41 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                 name_prefix = f'{idx}/sample-{stage1_idx}-{i}'
 
             # if self.cond_key in ['caption', 'img-c']:
+            cam_pathes = uni_mesh_path(10)
 
             with th.cuda.amp.autocast(dtype=self.dtype,
                                         enabled=self.mp_trainer.use_amp):
 
             #     # ! todo, transform to gs camera
                 if self.latent_key != 'latent': # normalized-xyz
-                    pcd_export_dir = f'{save_dir}/{name_prefix}.ply'
-                    pcu.save_mesh_v(pcd_export_dir, self.unnormalize_pcd_act(samples[i]).detach().cpu().float().numpy())
+                    
+                    pcd_export_dir = f'{save_dir}/{name_prefix}.glb' # pcu fails on py=3.9
+                    vtx = self.unnormalize_pcd_act(samples[i]).detach().cpu().float().numpy()
+                    cloud = trimesh.PointCloud(vtx @ rotation_matrix_x(-90).T, colors=np.ones_like(vtx)*0.75)
+                    _ = cloud.export(pcd_export_dir) # for gradio display
+                    logger.log(f'stage-1 glb point cloud saved to {pcd_export_dir}')
+
+                    pcd_export_dir_forstage1 = f'{save_dir}/{name_prefix}.ply'
+                    pcu.save_mesh_v(pcd_export_dir_forstage1, self.unnormalize_pcd_act(samples[i]).detach().cpu().float().numpy())
                     logger.log(f'point cloud saved to {pcd_export_dir}')
+                    return pcd_export_dir
                 else:
                     # ! editing debug
-                    all_rgbs, all_depths, all_alphas = self.render_gs_video_given_latent(
+                    all_rgbs, all_depths, all_alphas, video_path, rgb_xyz_path = self.render_gs_video_given_latent(
                         th.cat([samples[i:i+1], batch_c['fps-xyz'][0:1]], dim=-1), # ! debugging xyz diffusion
                         self.rec_model,  # compatible with join_model
                         name_prefix=name_prefix,
                         save_img=save_img,
-                        render_reference=camera,
+                        render_reference=cam_pathes,
                         export_mesh=False,)
                         # for_fid=False)
 
                     if export_mesh:
-                        self.export_mesh_from_2dgs(all_rgbs, all_depths, all_alphas, camera, idx, i)
+                        post_mesh_path=self.export_mesh_from_2dgs(all_rgbs, all_depths, all_alphas, cam_pathes, idx, i)
+                    else:
+                        post_mesh_path = ''
+
+                    return video_path, rgb_xyz_path, post_mesh_path
 
         # mesh = self.extract_mesh_bounded(all_rgbs, all_depths, all_alphas, cam_pathes, voxel_size=voxel_size, sdf_trunc=sdf_trunc, depth_trunc=depth_trunc, mask_backgrond=False)
 
@@ -1838,31 +1898,119 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
 
     @th.inference_mode()
+    def eval_i23d_and_export_gradio(
+        self,
+        inp_img,
+        seed=42,
+        cfg_scale=4.0, # default value in neural ode
+        save_img=False,
+        **kwargs,
+    ):
+
+        # logger.log(
+        #     unconditional_guidance_scale,
+        #     seed,
+        #     mesh_size,
+        #     mesh_thres,
+        # )
+
+        sampling_kwargs = {
+            'cfg_scale': cfg_scale, # default value in SiT
+            'seed': seed,
+        }
+
+        camera = th.load('assets/objv_eval_pose.pt', map_location=dist_util.dev())[:24]
+        inp_img = th.from_numpy(inp_img).permute(2,0,1).unsqueeze(0) / 127.5 - 1 # to [-1,1]
+
+        num_samples=1
+        export_mesh=True
+
+        # self.ddpm_model.eval()
+
+        # args = dnnlib.EasyDict(
+        #     dict(
+        #         batch_size=1,
+        #         image_size=self.diffusion_input_size,
+        #         denoise_in_channels=self.rec_model.decoder.triplane_decoder.
+        #         out_chans,  # type: ignore
+        #         clip_denoised=False,
+        #         class_cond=False))
+
+        # model_kwargs = {}
+
+        ucg_keys = [self.cond_key] # i23d
+
+        ins_name = 'house2-input' # for debug here
+
+        if self.cond_key == 'img-xyz': # stage-2
+
+            i = 0 # for gradio only
+            # for i in range(1):
+            stage_1_output_dir="./logs/i23d/stage-1/dino_img/"
+            stage1_pcd_output_path = f'{stage_1_output_dir}/{ins_name}/sample-0-{i}.ply'
+
+            fps_xyz = trimesh.load(stage1_pcd_output_path).vertices # pcu may fail on py=3.9
+            fps_xyz = torch.from_numpy(fps_xyz).clip(-0.45,0.45).unsqueeze(0)
+
+            logger.log('loading stage-1 point cloud from: ', stage1_pcd_output_path)
+
+            # fps_xyz = None # ! TODO, load from local directory
+            # batch_c = {
+            #     'img': batch['img'][0:1].to(self.dtype).to(dist_util.dev()),
+            #     'fps-xyz': fps_xyz[0:1].to(self.dtype).to(dist_util.dev()),
+            # }
+            batch_c = {'img': inp_img.to(dist_util.dev()).to(self.dtype),
+                        'fps-xyz': fps_xyz[0:1].to(self.dtype).to(dist_util.dev())}
+            
+            # no need to return here?
+            video_path, rgb_xyz_path, post_mesh_path = self.sample_and_save(batch_c, ucg_keys, num_samples, camera, save_img, idx=ins_name, export_mesh=export_mesh, stage1_idx=i, **sampling_kwargs) # type: ignore
+
+            # video_path = './logs/i23d/stage-2/dino_img/house2-input/sample-0-0-gs.mp4'
+            # rgb_xyz_path = './logs/i23d/stage-2/dino_img/low-poly-model-of-a-green-pine-tree,-also-resembling-a-Christmas-tree.-vc.ply' 
+            assert post_mesh_path != ''
+
+            return video_path, rgb_xyz_path, post_mesh_path
+
+        else: # stage-1 data
+            # batch_c = {self.cond_key: batch[self.cond_key][0:1].to(dist_util.dev()).to(self.dtype), }
+
+            # raise NotImplementedError('stage-2 only')
+            batch_c = {'img': inp_img.to(dist_util.dev()).to(self.dtype)}
+            pcd_export_dir = self.sample_and_save(batch_c, ucg_keys, num_samples, camera, save_img, idx=ins_name, export_mesh=export_mesh, **sampling_kwargs) # type: ignore
+            return pcd_export_dir
+
+
+    @th.inference_mode()
     def eval_i23d_and_export(
         self,
         prompt="Yellow rubber duck",
         # use_ddim=False,
-        # unconditional_guidance_scale=1.0,
+        unconditional_guidance_scale=4.0,
         save_img=False,
-        use_train_trajectory=False,
+        seed=42,
+        # cfg_scale=4.0, # default value in neural ode
         camera=None,
         num_samples=1,
         stage_1_output_dir='',
-        num_instances=1,
+        # num_instances=1,
         export_mesh=False,
     ):
         self.ddpm_model.eval()
 
-        args = dnnlib.EasyDict(
-            dict(
-                batch_size=1,
-                image_size=self.diffusion_input_size,
-                denoise_in_channels=self.rec_model.decoder.triplane_decoder.
-                out_chans,  # type: ignore
-                clip_denoised=False,
-                class_cond=False))
+        # args = dnnlib.EasyDict(
+        #     dict(
+        #         batch_size=1,
+        #         image_size=self.diffusion_input_size,
+        #         denoise_in_channels=self.rec_model.decoder.triplane_decoder.
+        #         out_chans,  # type: ignore
+        #         clip_denoised=False,
+        #         class_cond=False))
 
-        model_kwargs = {}
+        # model_kwargs = {}
+        sampling_kwargs = {
+            'cfg_scale': unconditional_guidance_scale, # default value in SiT
+            'seed': seed,
+        }
 
         uc = None
         log = dict()
@@ -1933,7 +2081,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                         'fps-xyz': fps_xyz[0:1].to(self.dtype).to(dist_util.dev()),
                     }
                     
-                    self.sample_and_save(batch_c, ucg_keys, num_samples, camera, save_img, idx=ins_name, export_mesh=export_mesh, stage1_idx=i) # type: ignore
+                    self.sample_and_save(batch_c, ucg_keys, num_samples, camera, save_img, idx=ins_name, export_mesh=export_mesh, stage1_idx=i,**sampling_kwargs) # type: ignore
 
             else: # stage-1 data
                 batch_c = {self.cond_key: batch[self.cond_key][0:1].to(dist_util.dev()).to(self.dtype), }
@@ -1948,7 +2096,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
             # os.mkdir(save_dir, exists_ok=True, parents=True)
 
             # self.sample_and_save(batch_c, ucg_keys, num_samples, camera, save_img, idx=f'{idx}-{ins}', export_mesh=export_mesh)
-                self.sample_and_save(batch_c, ucg_keys, num_samples, camera, save_img, idx=ins_name, export_mesh=export_mesh) # type: ignore
+                self.sample_and_save(batch_c, ucg_keys, num_samples, camera, save_img, idx=ins_name, export_mesh=export_mesh,**sampling_kwargs) # type: ignore
 
 
         gc.collect()

@@ -23,6 +23,8 @@ DATASET_FLAGS="
  --data_dir ${data_dir} \
  --eval_data_dir ${data_dir} \
 "
+unconditional_guidance_scale=4.5
+seed=59
 
 lr=0
 
@@ -205,4 +207,7 @@ torchrun --nproc_per_node=$NUM_GPUS \
  --num_samples ${num_samples} \
  --pcd_path /cpfs01/user/lanyushi.p/data/FPS_PCD/pcd-V=10_4096_polish_fullset/fps-pcd/ \
  --stage_1_output_dir ./logs/t23d/stage-1 \
+ --unconditional_guidance_scale ${unconditional_guidance_scale} \
+ --export_mesh True \
+ --seed ${seed} \
  --mv_latent_dir /cpfs01/user/lanyushi.p/data/latent_dir/gs-latent-dim=10-fullset-cascade-fixpcd-adv_xyzaug_loweradv_768-fixinprange/latent_dir

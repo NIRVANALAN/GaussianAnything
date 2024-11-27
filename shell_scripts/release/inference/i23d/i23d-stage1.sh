@@ -15,6 +15,8 @@ num_workers=1
 NUM_GPUS=1
 batch_size=1
 num_samples=2
+unconditional_guidance_scale=4.5
+seed=59
 
 microbatch=${batch_size}
 
@@ -111,7 +113,7 @@ logdir=./logs/i23d/stage-1/dino_img/
 SR_TRAIN_FLAGS_v1_2XC="
 --decoder_in_chans 32 \
 --out_chans 96 \
---ae_classname vit.vit_triplane.pcd_structured_latent_space_lion_learnoffset_surfel_novaePT_sr_cascade \
+--ae_classname vit.vit_triplane.pcd_structured_latent_space_vae_decoder_cascaded \
 --logdir $logdir \
 --arch_encoder vits \
 --arch_decoder vitb \
@@ -210,4 +212,6 @@ torchrun --nproc_per_node=$NUM_GPUS \
  --load_real True \
  --load_gso True \
  --pcd_path "" \
+ --unconditional_guidance_scale ${unconditional_guidance_scale} \
+ --seed ${seed} \
  --mv_latent_dir ""
