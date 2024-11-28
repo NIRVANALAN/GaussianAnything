@@ -74,6 +74,40 @@ def rotation_matrix_x(theta_degrees):
                                 [0, sin_theta, cos_theta]])
     return rotation_matrix
 
+def rotation_matrix_z(theta):
+    """
+    Returns a 3x3 rotation matrix that rotates a point around the z-axis by theta radians.
+    
+    Parameters:
+        theta (float): The angle of rotation in radians.
+        
+    Returns:
+        numpy.ndarray: A 3x3 rotation matrix.
+    """
+    return np.array([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta),  np.cos(theta), 0],
+        [0,              0,             1]
+    ])
+
+def rotation_matrix_y(theta):
+    """
+    Returns a 3x3 rotation matrix that rotates a point around the y-axis by theta radians.
+    
+    Parameters:
+        theta (float): The angle of rotation in radians.
+        
+    Returns:
+        numpy.ndarray: A 3x3 rotation matrix.
+    """
+    return np.array([
+        [np.cos(theta), 0, np.sin(theta)],
+        [0,             1, 0            ],
+        [-np.sin(theta), 0, np.cos(theta)]
+    ])
+
+
+
 # import SD stuffs
 from typing import Any, Dict, List, Optional, Tuple, Union
 from contextlib import contextmanager
@@ -1262,6 +1296,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         mesh_post = post_process_mesh(mesh)
         mesh_vertices = np.asarray(mesh_post.vertices)  # Convert vertices to a numpy array
         rotated_vertices = mesh_vertices @ rotation_matrix_x(-90).T
+        # rotated_vertices = rotated_vertices @ rotation_matrix_z(np.pi).T
+        rotated_vertices = rotated_vertices @ rotation_matrix_y(np.pi).T
         mesh_post.vertices = o3d.utility.Vector3dVector(rotated_vertices)  # Update vertices
         post_mesh_path = os.path.join(train_dir, name.replace('_raw.obj', '.obj'))
 
@@ -1410,6 +1446,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
     
         fine_gs_numpy = fine_gs.cpu().numpy()
         vtx = np.transpose(rotation_matrix_x(-90) @ np.transpose(fine_gs_numpy[0, :, :3])) # for gradio visualization
+        # vtx = vtx @ rotation_matrix_z(np.pi).T
+        vtx = vtx @ rotation_matrix_y(np.pi).T
         cloud = trimesh.PointCloud(vtx, colors=fine_gs_numpy[0, :, 10:13])
         # Save the point cloud to an OBJ file
         rgb_xyz_path_forgradio = f'{output_dir}/{name_prefix}-gaussian-pcd.glb' # gradio only accepts glb for visualization
@@ -1550,7 +1588,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                 for k in pred_scale.keys():
                     pred_scale[k] = einops.rearrange(pred_scale[k], 'B V ... -> (B V) ...') # merge 
                 
-                pred_vis = self._make_vis_img(pred_scale)
+                pred_vis = self._make_vis_img(pred_scale, ignore_depth=True)
 
                 vis = pred_vis.permute(0, 2, 3, 1).cpu().numpy()
                 vis = vis * 127.5 + 127.5
@@ -1563,7 +1601,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
             # all_pred_vis_concat = np.concatenate([cv2.resize(all_pred_vis[k][0], (384*len(all_pred_vis.keys()), 384)) for k in all_pred_vis.keys()], axis=0)
             # all_pred_vis_concat = np.concatenate([cv2.resize(all_pred_vis[k][0], (384*3, 384)) for k in all_pred_vis.keys()], axis=0)
 
-            all_pred_vis_concat = np.concatenate([cv2.resize(all_pred_vis[k][0], (512*3, 512)) for k in all_pred_vis.keys()], axis=0)
+            # all_pred_vis_concat = np.concatenate([cv2.resize(all_pred_vis[k][0], (512*3, 512)) for k in all_pred_vis.keys()], axis=0)
+            all_pred_vis_concat = np.concatenate([cv2.resize(all_pred_vis[k][0], (512*2, 512)) for k in all_pred_vis.keys()], axis=0)
 
             video_out.append_data(all_pred_vis_concat)
 
@@ -1585,28 +1624,36 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         return all_rgbs, all_depths, all_alphas, video_path, rgb_xyz_path_forgradio
 
     @th.no_grad()
-    def _make_vis_img(self, pred):
-
-        # if True:
-        pred_depth = pred['image_depth']
-        pred_depth = (pred_depth - pred_depth.min()) / (pred_depth.max() -
-                                                        pred_depth.min())
-
-        pred_depth = pred_depth.cpu()[0].permute(1, 2, 0).numpy()
-        pred_depth = (plt.cm.viridis(pred_depth[..., 0])[..., :3]) * 2 - 1
-        pred_depth = th.from_numpy(pred_depth).to(
-            pred['image_raw'].device).permute(2, 0, 1).unsqueeze(0)
-
+    def _make_vis_img(self, pred, ignore_depth=False):
         gen_img = pred['image_raw']
         rend_normal = pred['rend_normal']
 
-        pred_vis = th.cat(
-            [
-                gen_img,
-                rend_normal,
-                pred_depth,
-            ],
-            dim=-1)  # B, 3, H, W
+        # if True:
+        if not ignore_depth:
+            pred_depth = pred['image_depth']
+            pred_depth = (pred_depth - pred_depth.min()) / (pred_depth.max() -
+                                                            pred_depth.min())
+
+            pred_depth = pred_depth.cpu()[0].permute(1, 2, 0).numpy()
+            pred_depth = (plt.cm.viridis(pred_depth[..., 0])[..., :3]) * 2 - 1
+            pred_depth = th.from_numpy(pred_depth).to(
+                pred['image_raw'].device).permute(2, 0, 1).unsqueeze(0)
+
+            pred_vis = th.cat(
+                [
+                    gen_img,
+                    rend_normal,
+                    pred_depth,
+                ],
+                dim=-1)  # B, 3, H, W
+
+        else:
+            pred_vis = th.cat(
+                [
+                    gen_img,
+                    rend_normal,
+                ],
+                dim=-1)  # B, 3, H, W
         
         return pred_vis
 
@@ -1686,7 +1733,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                     
                     pcd_export_dir = f'{save_dir}/{name_prefix}.glb' # pcu fails on py=3.9
                     vtx = self.unnormalize_pcd_act(samples[i]).detach().cpu().float().numpy()
-                    cloud = trimesh.PointCloud(vtx @ rotation_matrix_x(-90).T, colors=np.ones_like(vtx)*0.75)
+                    cloud = trimesh.PointCloud(vtx @ rotation_matrix_x(-90).T, colors=np.ones_like(vtx)*0.1) # since white background
                     _ = cloud.export(pcd_export_dir) # for gradio display
                     logger.log(f'stage-1 glb point cloud saved to {pcd_export_dir}')
 

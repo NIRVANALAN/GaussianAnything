@@ -29,11 +29,11 @@ GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation
     <!-- <br>
      <sup>*</sup>corresponding author -->
 </div>
-
+<!-- <br> -->
 <div>
 <a href="https://hits.seeyoufarm.com"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FNIRVANALAN%2FGaussianAnything&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false"/></a>
 </div>
-<br>
+<!-- <br> -->
 <!-- <h4> -->
 <strong>
 GaussianAnything generates <i>high-quality</i> and <i>editable</i> surfel Gaussians through a cascaded native 3D diffusion pipeline, given single-view images or texts as the conditions.
@@ -63,7 +63,7 @@ This repository contains the official implementation of GaussianAnything: Intera
   •
   <a href="https://arxiv.org/abs/2411.08033" target='_blank'>[arXiv]</a>
   •
-  <a href="https://huggingface.co/spaces/yslan/" target='_blank'>[Gradio Demo (incoming)]</a> 
+  <a href="https://huggingface.co/spaces/yslan/GaussianAnything-AIGC3D" target='_blank'>[Gradio Demo]</a> 
 </h4>
 
 
@@ -86,6 +86,9 @@ This repository contains the official implementation of GaussianAnything: Intera
 
 
 ## :mega: Updates
+
+[28/Nov/2024] Release gradio demo (Huggingface ZeroGPU), which supports image-to-3D generation: <a href="https://huggingface.co/spaces/yslan/GaussianAnything-AIGC3D"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Gradio%20Demo-Huggingface-orange"></a>
+<!-- [here](https://huggingface.co/spaces/yslan/GaussianAnything-AIGC3D)! -->
 
 [27/Nov/2024] Release gradio demo (local version), which supports image-to-3D generation. Simply call ```python scripts/gradio_app_cascaded.py```.
 
@@ -111,7 +114,7 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 - [x] Release Training code.
 - [x] Release pre-extracted latent codes for 3D diffusion training.
 - [x] Release Gradio Demo (locally).
-- [ ] Release Gradio Demo (Huggingface ZeroGPU).
+- [x] Release Gradio Demo (Huggingface ZeroGPU) for image-to-3D generation, check it [here](https://huggingface.co/spaces/yslan/GaussianAnything-AIGC3D)!
 - [ ] Release the evaluation code.
 - [ ] Lint the code.
 
@@ -184,13 +187,9 @@ Then, set the ```$stage_1_output_dir``` to the ```$logdir``` of the above stage.
 bash shell_scripts/release/inference/i23d/i23d-stage2.sh
 ```
 
-In the output dir of each instance, e.g., ```./logs/i23d/stage-2/dino_img/house2-input```, the code dumped the colored point cloud extracted from the surfel Gaussians center (xyz+RGB) ```sample-0-0-gaussian-pcd.ply```:
+In the output dir of each instance, e.g., ```./logs/i23d/stage-2/dino_img/house2-input```, the code dumped the colored point cloud extracted from the surfel Gaussians center (xyz+RGB) ```sample-0-0-gaussian-pcd.ply```, as well as the TSDF mesh ```stage1ID_0-stage2ID-0-mesh.obj```:
 
-<img title="a title" alt="Gaussians XYZ Visualization" src="./assets/i23d-output/house-xyz.png">
-
-The TSDF mesh ```stage1ID_0-stage2ID-0-mesh.obj```:
-
-<img title="a title" alt="Surfel Gaussians TSDF" src="./assets/i23d-output/house-tsdf.png">
+<img title="a title" alt="Gaussians XYZ Visualization" src="./assets/i23d-output/gradio-cat.png">
 
 Both can be visualized by meshlab.
 
