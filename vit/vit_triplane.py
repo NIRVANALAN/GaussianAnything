@@ -58,7 +58,7 @@ from timm.models.vision_transformer import PatchEmbed
 
 from utils.general_utils import matrix_to_quaternion, quaternion_raw_multiply, build_rotation
 
-from nsr.gs import GaussianRenderer
+# from nsr.gs import GaussianRenderer
 
 from utils.dust3r.heads import create_dpt_head
 

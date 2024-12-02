@@ -9,7 +9,7 @@ from pathlib import Path
 from pdb import set_trace as st
 
 import traceback
-from nsr.gs import GaussianRenderer
+# from nsr.gs import GaussianRenderer
 from nsr.gs_surfel import GaussianRenderer2DGS
 import blobfile as bf
 import imageio
@@ -880,9 +880,9 @@ class TrainLoop3DRec(TrainLoopBasic):
 
             # gs rendering no MLP
             if not (
-            isinstance(
-                    self.mp_trainer_rec.model.decoder.triplane_decoder,
-                    GaussianRenderer) or 
+            # isinstance(
+            #         self.mp_trainer_rec.model.decoder.triplane_decoder,
+            #         GaussianRenderer) or 
             isinstance(
                     self.mp_trainer_rec.model.decoder.triplane_decoder,
                     GaussianRenderer2DGS)):

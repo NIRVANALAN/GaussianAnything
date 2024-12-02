@@ -4733,10 +4733,10 @@ class RealDataset_GSO(Dataset):
         if True: # instant-mesh picked images
         # if False:
             all_instances = os.listdir(self.file_path) 
-            # all_fname = [
-            #     t for t in all_instances
-            #     if t.split('.')[1] in ['png', 'jpg']
-            # ]
+            all_fname = [
+                t for t in all_instances
+                if t.split('.')[1] in ['png', 'jpg']
+            ]
 
             # all_fname = [name for name in all_fname if '-input' in name ]
 

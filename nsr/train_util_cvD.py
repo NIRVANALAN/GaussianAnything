@@ -9,7 +9,6 @@ import imageio
 import numpy as np
 import torch as th
 import torch.distributed as dist
-import torchvision
 from PIL import Image
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from tqdm import tqdm
@@ -23,7 +22,7 @@ from guided_diffusion.train_util import (calc_average_loss,
 from torch.optim import AdamW
 
 from .train_util import TrainLoopBasic, TrainLoop3DRec
-import vision_aided_loss
+# import vision_aided_loss
 from dnnlib.util import calculate_adaptive_weight
 
 

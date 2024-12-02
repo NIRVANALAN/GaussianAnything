@@ -19,7 +19,7 @@ from ldm.modules.diffusionmodules.model import Encoder, Decoder, MVEncoder, MVEn
 from ldm.modules.diffusionmodules.mv_unet import MVUNet, LGM_MVEncoder
 from torch.profiler import profile, record_function, ProfilerActivity
 
-from nsr.gs import GaussianRenderer
+# from nsr.gs import GaussianRenderer
 from nsr.gs_surfel import GaussianRenderer2DGS
 # from nsr.srt.encoder import ImprovedSRTEncoderVAE, ImprovedSRTEncoderVAE_L5_vitl, ImprovedSRTEncoderVAE_mlp_ratio4, ImprovedSRTEncoderVAE_L6, ImprovedSRTEncoderVAE_mlp_ratio4_f8, ImprovedSRTEncoderVAE_mlp_ratio4_heavyPatchify, ImprovedSRTEncoderVAE_mlp_ratio4_f8_L6, ImprovedSRTEncoderVAE_mlp_ratio4_L6, HybridEncoder, ImprovedSRTEncoderVAE_mlp_ratio4_decomposed, HybridEncoderPCDStructuredLatent
 from nsr.srt.encoder import *
@@ -1481,8 +1481,10 @@ def create_3DAE_model(
             triplane_decoder = GaussianRenderer2DGS(
                 image_size, out_chans, rendering_kwargs=rendering_kwargs)
         else:
-            triplane_decoder = GaussianRenderer(
-                image_size, out_chans, rendering_kwargs=rendering_kwargs)
+            raise NotImplementedError()
+
+        #     triplane_decoder = GaussianRenderer(
+        #         image_size, out_chans, rendering_kwargs=rendering_kwargs)
 
         if load_pretrain_encoder:
 

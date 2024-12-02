@@ -138,12 +138,23 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 
 # Inference
 
-## setup the environment (the same env as [LN3Diff, ECCV 2024](https://github.com/NIRVANALAN/LN3Diff?tab=readme-ov-file))
+## setup the PyTorch environment (the same env as [LN3Diff, ECCV 2024](https://github.com/NIRVANALAN/LN3Diff?tab=readme-ov-file))
 
 ```bash
+# download
+git clone https://github.com/hbb1/2d-gaussian-splatting.git --recursive
+
+# setup the pytorch+xformers+pytorch3d environment
 conda create -n ga python=3.10
 conda activate ga
-pip intall -r requrements.txt # will install the surfel Gaussians environments and pytorch3d automatically.
+pip install -r requirements.txt 
+pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
+```
+
+Then, install the 2DGS dependencies:
+```bash
+pip install third_party/diff-surfel-rasterization
+pip install third_party/simple-knn
 ```
 
 ## Gradio demo (Image-to-3D)

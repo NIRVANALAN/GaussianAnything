@@ -1,3 +1,6 @@
 [submodule "third_party/diff-surfel-rasterization"]
 	path = third_party/diff-surfel-rasterization
 	url = git@github.com:hbb1/diff-surfel-rasterization.git
+[submodule "third_party/simple-knn"]
+	path = third_party/simple-knn
+	url = https://gitlab.inria.fr/bkerbl/simple-knn.git

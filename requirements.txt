@@ -1,6 +1,6 @@
-torch
+torch==2.1.0
+torchvision==0.16.0
 xformers==0.0.26.post1
-torchvision
 absl-py
 tensorboard
 lpips
@@ -45,6 +45,3 @@ tritonclient
 gradio==4.43.0
 rembg
 onnxruntime
-git+https://github.com/facebookresearch/pytorch3d.git@stable
-git+https://github.com/hbb1/diff-surfel-rasterization.git
-git+https://gitlab.inria.fr/bkerbl/simple-knn.git
