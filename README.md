@@ -142,7 +142,7 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 
 ```bash
 # download
-git clone https://github.com/hbb1/2d-gaussian-splatting.git --recursive
+git clone https://github.com/NIRVANALAN/GaussianAnything.git --recursive
 
 # setup the pytorch+xformers+pytorch3d environment
 conda create -n ga python=3.10
