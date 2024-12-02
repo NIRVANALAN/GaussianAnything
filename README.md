@@ -142,7 +142,7 @@ bash shell_scripts/final_release/inference/gradio_sample_obajverse_i23d_dit.sh
 
 ```bash
 # download
-git clone https://github.com/NIRVANALAN/GaussianAnything.git --recursive
+git clone https://github.com/NIRVANALAN/GaussianAnything.git
 
 # setup the pytorch+xformers+pytorch3d environment
 conda create -n ga python=3.10
@@ -153,8 +153,8 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
 
 Then, install the 2DGS dependencies:
 ```bash
-pip install submodules/diff-surfel-rasterization
-pip install submodules/simple-knn
+pip install "git+https://github.com/hbb1/diff-surfel-rasterization.git"
+pip install "git+https://gitlab.inria.fr/bkerbl/simple-knn.git"
 ```
 
 ## Gradio demo (Image-to-3D)
