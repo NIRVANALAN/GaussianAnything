@@ -153,8 +153,8 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
 
 Then, install the 2DGS dependencies:
 ```bash
-pip install third_party/diff-surfel-rasterization
-pip install third_party/simple-knn
+pip install submodules/diff-surfel-rasterization
+pip install submodules/simple-knn
 ```
 
 ## Gradio demo (Image-to-3D)
