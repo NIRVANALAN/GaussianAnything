@@ -66,7 +66,7 @@ from packaging import version
 assert version.parse(torch.__version__) >= version.parse("2.0.0")
 SDP_IS_AVAILABLE = True
 # from torch.backends.cuda import SDPBackend, sdp_kernel
-from torch.nn.attention import sdpa_kernel, SDPBackend
+# from torch.nn.attention import sdpa_kernel, SDPBackend
 
 
 class Attention(nn.Module):
@@ -110,7 +110,7 @@ class Attention(nn.Module):
         self.no_flash_op = no_flash_op
         self.attn_mode = "torch"
          
-        self.backend = SDPBackend.FLASH_ATTENTION # FA implemented by torch.
+        # self.backend = SDPBackend.FLASH_ATTENTION # FA implemented by torch.
 
     @staticmethod
     def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
@@ -198,9 +198,8 @@ class Attention(nn.Module):
             q, k, v = qkv[0], qkv[1], qkv[2]  # B H L D
             q, k = self.q_norm(q), self.k_norm(k)
 
-            with sdpa_kernel([self.backend]): # new signature
-
-                x = torch.nn.functional.scaled_dot_product_attention(q, k, v)
+            # with sdpa_kernel([self.backend]): # new signature
+            x = torch.nn.functional.scaled_dot_product_attention(q, k, v)
                  
             del q, k, v
             x = rearrange(x, "B H L D -> B L (H D)")

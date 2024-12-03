@@ -26,40 +26,40 @@ from xformers.ops import MemoryEfficientAttentionFlashAttentionOp, MemoryEfficie
 # import apex
 # from apex.normalization import FusedRMSNorm as RMSNorm
 
-if version.parse(torch.__version__) >= version.parse("2.0.0"):
-    SDP_IS_AVAILABLE = True
-    # from torch.backends.cuda import SDPBackend, sdp_kernel
-    from torch.nn.attention import sdpa_kernel, SDPBackend
+# if version.parse(torch.__version__) >= version.parse("2.0.0"):
+#     SDP_IS_AVAILABLE = True
+#     # from torch.backends.cuda import SDPBackend, sdp_kernel
+#     from torch.nn.attention import sdpa_kernel, SDPBackend
 
-    BACKEND_MAP = {
-        SDPBackend.MATH: {
-            "enable_math": True,
-            "enable_flash": False,
-            "enable_mem_efficient": False,
-        },
-        SDPBackend.FLASH_ATTENTION: {
-            "enable_math": False,
-            "enable_flash": True,
-            "enable_mem_efficient": False,
-        },
-        SDPBackend.EFFICIENT_ATTENTION: {
-            "enable_math": False,
-            "enable_flash": False,
-            "enable_mem_efficient": True,
-        },
-        None: {"enable_math": True, "enable_flash": True, "enable_mem_efficient": True},
-    }
-else:
-    from contextlib import nullcontext
+#     BACKEND_MAP = {
+#         SDPBackend.MATH: {
+#             "enable_math": True,
+#             "enable_flash": False,
+#             "enable_mem_efficient": False,
+#         },
+#         SDPBackend.FLASH_ATTENTION: {
+#             "enable_math": False,
+#             "enable_flash": True,
+#             "enable_mem_efficient": False,
+#         },
+#         SDPBackend.EFFICIENT_ATTENTION: {
+#             "enable_math": False,
+#             "enable_flash": False,
+#             "enable_mem_efficient": True,
+#         },
+#         None: {"enable_math": True, "enable_flash": True, "enable_mem_efficient": True},
+#     }
+# else:
+#     from contextlib import nullcontext
 
-    SDP_IS_AVAILABLE = False
-    sdpa_kernel = nullcontext
-    BACKEND_MAP = {}
-    logpy.warn(
-        f"No SDP backend available, likely because you are running in pytorch "
-        f"versions < 2.0. In fact, you are using PyTorch {torch.__version__}. "
-        f"You might want to consider upgrading."
-    )
+#     SDP_IS_AVAILABLE = False
+#     sdpa_kernel = nullcontext
+#     BACKEND_MAP = {}
+#     logpy.warn(
+#         f"No SDP backend available, likely because you are running in pytorch "
+#         f"versions < 2.0. In fact, you are using PyTorch {torch.__version__}. "
+#         f"You might want to consider upgrading."
+#     )
 
 
 def exists(val):
@@ -211,7 +211,7 @@ class CrossAttention(nn.Module):
         dim_head=64,
         dropout=0.0,
         # backend=None,
-        backend=SDPBackend.FLASH_ATTENTION, # FA implemented by torch.
+        # backend=SDPBackend.FLASH_ATTENTION, # FA implemented by torch.
         **kwargs,
     ):
         super().__init__()
@@ -228,7 +228,7 @@ class CrossAttention(nn.Module):
         self.to_out = nn.Sequential(
             nn.Linear(inner_dim, query_dim), nn.Dropout(dropout)
         )
-        self.backend = backend
+        # self.backend = backend
 
     def forward(
         self,
@@ -282,11 +282,12 @@ class CrossAttention(nn.Module):
         """
         ## new
         # with sdpa_kernel(**BACKEND_MAP[self.backend]):
-        with sdpa_kernel([self.backend]): # new signature
-            # print("dispatching into backend", self.backend, "q/k/v shape: ", q.shape, k.shape, v.shape)
-            out = F.scaled_dot_product_attention(
-                q, k, v, attn_mask=mask
-            )  # scale is dim_head ** -0.5 per default
+        # with sdpa_kernel([self.backend]): # new signature
+
+        # print("dispatching into backend", self.backend, "q/k/v shape: ", q.shape, k.shape, v.shape)
+        out = F.scaled_dot_product_attention(
+            q, k, v, attn_mask=mask
+        )  # scale is dim_head ** -0.5 per default
 
         del q, k, v
         out = rearrange(out, "b h n d -> b n (h d)", h=h)
