@@ -10,7 +10,7 @@ NUM_GPUS=1
 image_size=512
 image_size_encoder=512
 
-num_workers=2 # for debug
+num_workers=0 # for debug
 
 patch_size=14
 kl_lambda=1.0e-06
@@ -174,7 +174,7 @@ torchrun --nproc_per_node=$NUM_GPUS \
  --use_wds False \
  --append_xyz True \
  --use_chunk True \
- --pcd_path /mnt/sfs-common/yslan/Dataset/Obajverse/FPS_PCD/pcd-V=10_4096_polish_fullset/fps-pcd \
+ --pcd_path ./assets/demo-image-for-i23d/FPS_PCD_for_vae \
  --pt_ft_kl False \
  --surfel_rendering True \
  --plane_n 1 \
