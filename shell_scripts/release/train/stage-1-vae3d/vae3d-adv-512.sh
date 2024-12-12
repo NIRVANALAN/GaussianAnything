@@ -101,7 +101,7 @@ SR_TRAIN_FLAGS_v1_2XC="
 --encoder_weight_decay 0.001 \
 --color_criterion mse \
 --decoder_output_dim 3 \
---ae_classname vit.vit_triplane.pcd_structured_latent_space_lion_learnoffset_surfel_novaePT_sr_cascade_x8x4x4_512 \
+--ae_classname vit.vit_triplane.pcd_structured_latent_space_vae_decoder_cascaded \
 "
 
 # pcd_structured_latent_space_lion_learnoffset_surfel_sr_noptVAE
