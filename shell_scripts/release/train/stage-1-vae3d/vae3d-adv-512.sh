@@ -209,4 +209,5 @@ torchrun --rdzv-endpoint=localhost:19408 \
  --patchgan_disc_factor ${patchgan_disc_factor} \
  --patchgan_disc_g_weight ${patchgan_disc_g_weight} \
  --perturb_pcd_scale ${perturb_pcd_scale} \
+ --latent_num 768 \
  --plane_n 1 \
