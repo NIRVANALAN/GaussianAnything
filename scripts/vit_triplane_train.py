@@ -15,6 +15,8 @@ import traceback
 
 import torch as th
 
+from xformers.components.feedforward import fused_mlp
+
 # if th.cuda.is_available(): # FIXME
 #     from xformers.triton import FusedLayerNorm as LayerNorm
 

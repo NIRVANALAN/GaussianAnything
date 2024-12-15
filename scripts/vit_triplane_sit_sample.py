@@ -11,6 +11,7 @@ sys.path.append('.')
 import traceback
 
 import torch as th
+from xformers.components.feedforward import fused_mlp
 # from xformers.triton import FusedLayerNorm as LayerNorm
 import torch.multiprocessing as mp
 import torch.distributed as dist

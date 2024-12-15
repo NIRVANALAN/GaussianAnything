@@ -34,6 +34,7 @@ from guided_diffusion.continuous_diffusion import make_diffusion as make_sde_dif
 import nsr
 import nsr.lsgm
 # from nsr.train_util_diffusion import TrainLoop3DDiffusion as TrainLoop
+from xformers.components.feedforward import fused_mlp
 
 from datasets.eg3d_dataset import LMDBDataset_MV_Compressed_eg3d
 from nsr.script_util import create_3DAE_model, encoder_and_nsr_defaults, loss_defaults, rendering_options_defaults, eg3d_options_default, dataset_defaults
