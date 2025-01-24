@@ -1,7 +1,7 @@
 <div align="center">
 
 <h1>
-GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation
+GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation (ICLR 2025)
 </h1>
 
 <div>
@@ -86,6 +86,8 @@ This repository contains the official implementation of GaussianAnything: Intera
 
 
 ## :mega: Updates
+
+[24/Jan/2025] GaussianAnything is accepted by ICLR 2025!
 
 [28/Nov/2024] Release gradio demo (Huggingface ZeroGPU), which supports image-to-3D generation: <a href="https://huggingface.co/spaces/yslan/GaussianAnything-AIGC3D"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Gradio%20Demo-Huggingface-orange"></a>
 <!-- [here](https://huggingface.co/spaces/yslan/GaussianAnything-AIGC3D)! -->
@@ -283,13 +285,12 @@ bash shell_scripts/release/train/stage2-i23d/i23d-klfeat-gen.sh
 ## BibTex
 If you find our work useful for your research, please consider citing the paper:
 ```
-@article{lan2024ga,
-    title={GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation}, 
-    author={Yushi Lan and Shangchen Zhou and Zhaoyang Lyu and Fangzhou Hong and Shuai Yang and Bo Dai and Xingang Pan and Chen Change Loy},
-    eprint={2411.08033},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV}
-}
+@inproceedings{lan2024ga,
+  title={GaussianAnything: Interactive Point Cloud Latent Diffusion for 3D Generation},
+  author={Yushi Lan and Shangchen Zhou and Zhaoyang Lyu and Fangzhou Hong and Shuai Yang and Bo Dai and Xingang Pan and Chen Change Loy},
+  year={2025},
+  booktitle={ICLR},
+} 
 ```
 
 
