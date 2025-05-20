@@ -3,6 +3,7 @@ import json
 import sys
 sys.path.append('.')
 import torch
+from xformers.components.feedforward import fused_mlp
 import torchvision
 from torchvision import transforms
 import numpy as np

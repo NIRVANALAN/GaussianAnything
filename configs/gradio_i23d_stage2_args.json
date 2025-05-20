@@ -22,7 +22,7 @@
   "log_interval": 100,
   "eval_interval": 5000,
   "save_interval": 10000,
-  "resume_checkpoint": "/mnt/sfs-common/yslan/open-source/checkpoints/i23d/stage-2/model_joint_denoise_rec_model2505000.pt",
+  "resume_checkpoint": "yslan/GaussianAnything/ckpts/checkpoints/i23d/stage-2/model_joint_denoise_rec_model2505000.pt",
   "resume_checkpoint_EG3D": "",
   "use_fp16": false,
   "fp16_scale_growth": 0.001,

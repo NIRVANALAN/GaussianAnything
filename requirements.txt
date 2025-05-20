@@ -1,6 +1,6 @@
 torch==2.1.0
 torchvision==0.16.0
-xformers==0.0.26.post1
+xformers==0.0.22.post7
 absl-py
 tensorboard
 lpips
@@ -24,6 +24,7 @@ open_clip_torch==2.24.0
 openai-clip
 timm
 matplotlib
+numpy==1.26.4
 torchtyping
 omegaconf
 pytorch_lightning
@@ -33,6 +34,7 @@ open3d
 trimesh
 huggingface_hub
 safetensors
+pydantic==2.8.2
 PyMCubes
 vision-aided-loss
 transformers
