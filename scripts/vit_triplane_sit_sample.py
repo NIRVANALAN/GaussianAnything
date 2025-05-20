@@ -276,7 +276,7 @@ def training_loop(args):
 
 
     else:
-        # the script used in 3dtopia
+        # the script used in 3dtopia, t23d
         with open('datasets/caption-forpaper.txt', 'r') as f:
             all_prompts_available = [caption.strip() for caption in f.readlines()]
 

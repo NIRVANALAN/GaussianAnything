@@ -563,7 +563,7 @@ class TrainLoopDiffusionWithRec(TrainLoop):
                                   model=None,
                                   model_name='ddpm',
                                   resume_checkpoint=None):
-        hf_loading = 'yslan/GaussianAnything' in self.resume_checkpoint
+        hf_loading = 'yslan/GaussianAnything' in self.resume_checkpoint and 'home' not in self.resume_checkpoint 
 
         if not hf_loading and resume_checkpoint is None:
             resume_checkpoint, self.resume_step = find_resume_checkpoint(

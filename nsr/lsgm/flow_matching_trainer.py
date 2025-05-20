@@ -1241,7 +1241,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         self.ddpm_model.train()
 
     @torch.no_grad()
-    def export_mesh_from_2dgs(self, all_rgbs, all_depths, all_alphas, cam_pathes, idx, i):
+    def export_mesh_from_2dgs(self, all_rgbs, all_depths, all_alphas, cam_pathes, idx, i, video_path=None):
         # https://github.com/autonomousvision/LaRa/blob/main/evaluation.py
         n_thread = 1 # avoid TSDF cpu hanging bug.
         os.environ["MKL_NUM_THREADS"] = f"{n_thread}" 
@@ -1280,7 +1280,13 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
         # name = f'{idx}-{i}-fuse.ply'
         # name = f'mesh.obj'
-        name = f'{idx}/{i}-mesh_raw.obj'
+        # st()
+        if video_path is not None:
+            # name = f'{idx}/{i}-mesh_raw.obj'
+            mesh_output_dir = video_path.replace('-gs.mp4', '-mesh_raw.obj') # for easier video index
+        else:
+            name = f'{idx}/{i}-mesh_raw.obj'
+            mesh_output_dir = os.path.join(train_dir, name)
         # st()
         # depth_trunc = (radius * 2.0) if depth_trunc < 0  else depth_trunc
         # voxel_size = (depth_trunc / mesh_res) if voxel_size < 0 else voxel_size
@@ -1288,8 +1294,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         # mesh = self.extract_mesh_bounded(all_rgbs, all_depths, all_alphas, cam_pathes, voxel_size=voxel_size, sdf_trunc=sdf_trunc, depth_trunc=depth_trunc, mask_backgrond=False)
         mesh = self.extract_mesh_bounded(all_rgbs, all_depths, all_alphas, cam_pathes)
         
-        o3d.io.write_triangle_mesh(os.path.join(train_dir, name), mesh)
-        logger.log("mesh saved at {}".format(os.path.join(train_dir, name)))
+        o3d.io.write_triangle_mesh(mesh_output_dir, mesh)
+        logger.log("mesh saved at {}".format(mesh_output_dir))
         # post-process the mesh and save, saving the largest N clusters
         # mesh_post = post_process_mesh(mesh, cluster_to_keep=num_cluster)
 
@@ -1299,7 +1305,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         # rotated_vertices = rotated_vertices @ rotation_matrix_z(np.pi).T
         rotated_vertices = rotated_vertices @ rotation_matrix_y(np.pi).T
         mesh_post.vertices = o3d.utility.Vector3dVector(rotated_vertices)  # Update vertices
-        post_mesh_path = os.path.join(train_dir, name.replace('_raw.obj', '.obj'))
+        # post_mesh_path = os.path.join(train_dir, name.replace('_raw.obj', '.obj'))
+        post_mesh_path = mesh_output_dir.replace('_raw.obj', '.obj')
 
         o3d.io.write_triangle_mesh(post_mesh_path, mesh_post)
 
@@ -1536,12 +1543,14 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
         # for i, batch in enumerate(tqdm(self.eval_data)):
         for i, micro_c in enumerate(tqdm(render_reference)):
+        # for i, micro_c in enumerate(tqdm(render_reference['c'].cpu().numpy())):
             # micro = {
             #     k: v.to(dist_util.dev()) if isinstance(v, th.Tensor) else v
             #     for k, v in batch.items() 
             # }
 
             # c = self.eval_data.post_process.c_to_3dgs_format(micro_c)
+            # st()
             c = self.c_to_3dgs_format(micro_c)
             for k in c.keys(): # to cuda
                 if isinstance(c[k], th.Tensor) and k != 'tanfov':
@@ -1724,6 +1733,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
             # if self.cond_key in ['caption', 'img-c']:
             cam_pathes = uni_mesh_path(10)
+            # cam_pathes = uni_mesh_path(50)
 
             with th.cuda.amp.autocast(dtype=self.dtype,
                                         enabled=self.mp_trainer.use_amp):
@@ -1767,7 +1777,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         self,
         prompt="Yellow rubber duck",
         # use_ddim=False,
-        # unconditional_guidance_scale=1.0,
+        unconditional_guidance_scale=1.0,
         save_img=False,
         use_train_trajectory=False,
         camera=None,
@@ -1775,6 +1785,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
         stage_1_output_dir='',
         num_instances=1,
         export_mesh=False,
+        # *args,
+        **kwargs,
     ):
         self.ddpm_model.eval()
 
@@ -1806,6 +1818,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                 )
 
             sampling_kwargs = {}
+            cam_pathes = uni_mesh_path(10) # sampled from 6 different degrees
 
             N = num_samples  # hard coded, to update
             z_shape = (N, 768, self.ddpm_model.in_channels)
@@ -1856,7 +1869,7 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                         logger.log(f'point cloud saved to {logger.get_dir()}/{name_prefix}.ply')
                     else:
                         # ! editing debug
-                        all_rgbs, all_depths, all_alphas = self.render_gs_video_given_latent(
+                        all_rgbs, all_depths, all_alphas, video_path, rgb_xyz_path_forgradio = self.render_gs_video_given_latent(
                             # samples[i:i+1].to(self.dtype), # default version
                             # th.cat([gt_kl_latent.to(samples), gt_xyz.to(samples)], dim=-1), 
 
@@ -1870,18 +1883,21 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
                             self.rec_model,  # compatible with join_model
                             name_prefix=name_prefix,
                             save_img=save_img,
-                            render_reference=batch,
+                            # render_reference=batch,
+                            render_reference=cam_pathes,
                             export_mesh=False)
 
                         if export_mesh:
-                            self.export_mesh_from_2dgs(all_rgbs, all_depths, idx, i)
+                            # self.export_mesh_from_2dgs(all_rgbs, all_depths, all_alphas, batch['c'].cpu().numpy(), idx, i, video_path=video_path)
+                            self.export_mesh_from_2dgs(all_rgbs, all_depths, all_alphas, cam_pathes, idx, i, video_path=video_path)
 
         if self.cond_key == 'caption':
             assert prompt != ''
             batch_c = {self.cond_key: prompt}
 
             if self.latent_key == 'latent': # t23d, stage-2
-                for i in range(2): # 8 * num_samples here
+                # for i in range(2): # 8 * num_samples here
+                for i in range(4): # 8 * num_samples here
                     fps_xyz = torch.from_numpy(pcu.load_mesh_v(f'{stage_1_output_dir}/{prompt}_sample-0-{i}.ply') ).clip(-0.45,0.45).unsqueeze(0)
 
                     # ! if editing, change the latent points accordingly.
@@ -2064,7 +2080,6 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
         ucg_keys = [self.cond_key] # i23d
 
-
         for idx, batch in enumerate(tqdm(self.data)):
 
             ins = batch['ins'][0]
@@ -2115,7 +2130,8 @@ class FlowMatchingEngine_gs(FlowMatchingEngine):
 
             elif self.cond_key == 'img-xyz': # stage-2
 
-                for i in range(2):
+                # for i in range(2):
+                for i in range(1):
 
                     stage1_pcd_output_path = f'{stage_1_output_dir}/{ins_name}/sample-0-{i}.ply'
 
